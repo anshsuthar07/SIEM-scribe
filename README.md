@@ -40,13 +40,10 @@ This project solves that problem by introducing a **conversational interface** t
 ---
 
 ## 📸 Application Screenshots
-_Add screenshots of the running application below_
+![Application Screenshot 1](screenshots/screenshot1.png)
+![Application Screenshot 2](screenshots/screenshot2.png)
 
-```text
-screenshots/
-├── screenshot1.png
-└── screenshot2.png
-```
+---
 
 ## 🧠 How It Works
 
