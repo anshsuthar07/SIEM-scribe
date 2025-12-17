@@ -9,7 +9,7 @@ from langchain.prompts import PromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains import LLMChain
 
-# --- 1. SETUP ---
+
 load_dotenv()
 st.set_page_config(page_title="Conversational SIEM", layout="centered")
 
@@ -21,8 +21,6 @@ try:
 except Exception as e:
     st.error(f"Could not connect to Elasticsearch. Please ensure it is running. Error: {e}")
     st.stop()
-
-# --- 2. AI & LANGCHAIN SETUP (WITH AGGREGATION EXAMPLE) ---
 
 # This new prompt now includes a high-quality example for aggregations.
 prompt_template = """
