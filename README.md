@@ -39,6 +39,15 @@ This project solves that problem by introducing a **conversational interface** t
 
 ---
 
+## 📸 Application Screenshots
+_Add screenshots of the running application below_
+
+```text
+screenshots/
+├── screenshot1.png
+└── screenshot2.png
+```
+
 ## 🧠 How It Works
 
 1. User enters a security-related question in plain English  
