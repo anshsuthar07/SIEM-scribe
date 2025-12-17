@@ -72,7 +72,7 @@ PROMPT = PromptTemplate(input_variables=["input"], template=prompt_template)
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0)
+llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0)
 chain = LLMChain(llm=llm, prompt=PROMPT, verbose=True)
 
 # --- 3. STREAMLIT UI ---
@@ -144,4 +144,5 @@ if user_input:
                 error_msg = f"An error occurred: {e}"
                 st.error(error_msg)
                 st.session_state.chat_history.append({"role": "assistant", "content": error_msg})
+
 

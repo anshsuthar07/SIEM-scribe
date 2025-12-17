@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conversational SIEM Assistant</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    async function sendMessage(event) {
+      event.preventDefault();
+      const input = document.getElementById('message-input');
+      const text = input.value.trim();
+      if (!text) return;
+
+      appendMessage('user', text);
+      input.value = '';
+      setLoading(true);
+
+      try {
+        const res = await fetch('/query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: text })
+        });
+        const data = await res.json();
+        
+        if (data.type === 'table') {
+          appendTable(data.columns, data.rows);
+        } else if (data.type === 'chart') { // New check for charts
+          appendChart(data.chart_data);
+        } else {
+          appendMessage('assistant', data.message || 'No results.');
+        }
+
+      } catch {
+        appendMessage('assistant', 'An error occurred. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function appendMessage(role, content) {
+      const wrap = document.getElementById('chat');
+      const msg = document.createElement('div');
+      msg.className = `message ${role}`;
+      msg.innerHTML = `
+        <div class="avatar">${role === 'user' ? '🧑' : '🤖'}</div>
+        <div class="bubble">${escapeHtml(content)}</div>`;
+      wrap.appendChild(msg);
+      wrap.scrollTop = wrap.scrollHeight;
+    }
+
+    function appendTable(columns, rows) {
+      const wrap = document.getElementById('chat');
+      const msg = document.createElement('div');
+      msg.className = 'message assistant fade-in';
+      
+      const avatarDiv = document.createElement('div');
+      avatarDiv.className = 'avatar';
+      avatarDiv.textContent = '🤖';
+      msg.appendChild(avatarDiv);
+
+      const tableWrapper = document.createElement('div');
+      tableWrapper.className = 'table-wrapper';
+
+      const table = document.createElement('table');
+      table.className = 'result-table';
+      const thead = document.createElement('thead');
+      const trHead = document.createElement('tr');
+      for (const col of columns) {
+        const th = document.createElement('th');
+        th.textContent = col;
+        trHead.appendChild(th);
+      }
+      thead.appendChild(trHead);
+      table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+      for (const row of rows) {
+        const tr = document.createElement('tr');
+        for (const col of columns) {
+          const td = document.createElement('td');
+          td.textContent = row[col] ?? '';
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      }
+      table.appendChild(tbody);
+      
+      tableWrapper.appendChild(table);
+      msg.appendChild(tableWrapper);
+
+      wrap.appendChild(msg);
+      wrap.scrollTop = wrap.scrollHeight;
+    }
+
+    function appendChart(chartData) {
+        const wrap = document.getElementById('chat');
+        const msg = document.createElement('div');
+        msg.className = 'message assistant fade-in';
+        
+        const avatarDiv = document.createElement('div');
+        avatarDiv.className = 'avatar';
+        avatarDiv.textContent = '🤖';
+        msg.appendChild(avatarDiv);
+
+        const chartContainer = document.createElement('div');
+        chartContainer.className = 'chart-container';
+
+        const canvas = document.createElement('canvas');
+        chartContainer.appendChild(canvas);
+        msg.appendChild(chartContainer);
+
+        wrap.appendChild(msg);
+
+        // --- Create the chart using Chart.js ---
+        new Chart(canvas, {
+            type: chartData.type, // 'bar', 'line', etc. from our backend
+            data: {
+                labels: chartData.labels,
+                datasets: [{
+                    label: chartData.title,
+                    data: chartData.data,
+                    backgroundColor: 'rgba(184, 134, 11, 0.3)', // Accent color with opacity
+                    borderColor: 'rgba(184, 134, 11, 1)',   // Solid accent color
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                    }
+                }
+            }
+        });
+
+        wrap.scrollTop = wrap.scrollHeight;
+    }
+
+    function setLoading(isLoading) {
+      const btn = document.getElementById('send-btn');
+      btn.disabled = isLoading;
+      btn.textContent = isLoading ? 'Thinking…' : 'Send';
+    }
+
+    function escapeHtml(unsafe) {
+      return unsafe.replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+      }[m]));
+    }
+
+    document.addEventListener("scroll", () => {
+      document.querySelectorAll(".scroll-fade").forEach(el => {
+        const rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight - 100) el.classList.add("visible");
+      });
+    });
+  </script>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>Conversational SIEM Assistant</h1>
+      <p>Ask questions about your security logs — interact with data naturally.</p>
+    </header>
+
+    <main class="chat" id="chat"></main>
+
+    <form class="composer" onsubmit="sendMessage(event)">
+      <input id="message-input" type="text" placeholder="Ask me anything about your SIEM data…" autocomplete="off" />
+      <button id="send-btn" type="submit">Send</button>
+    </form>
+
+    <section class="examples scroll-fade">
+      <h2>✨ Example Prompts</h2>
+      <div class="example-cards">
+        <div class="card">
+          <h3>Prompt</h3>
+          <p>“Count failed login attempts by user.”</p>
+          <h3>Output</h3>
+          <pre>User1: 5 | User2: 3 | User3: 1</pre>
+        </div>
+        <div class="card">
+          <h3>Prompt</h3>
+          <p>“Show me top 5 IPs with most denied connections.”</p>
+          <h3>Output</h3>
+          <pre>192.168.1.22 - 45<br>10.0.0.8 - 31<br>172.16.0.4 - 22</pre>
+        </div>
+        <div class="card">
+          <h3>Prompt</h3>
+          <p>“Summarize events from last 24 hours.”</p>
+          <h3>Output</h3>
+          <pre>12 Success | 5 Failed | 3 Denied</pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="info scroll-fade">
+      <h2>🔍 How It Works</h2>
+      <p>
+        The Conversational SIEM Assistant combines the power of natural language processing 
+        with security event data to give you actionable insights instantly.   
+        Simply type your query in plain English — and it translates it into 
+        structured analytics against your SIEM logs.
+      </p>
+    </section>
+
+    <footer class="footer">
+      <p>© 2025 Conversational SIEM Assistant | Designed with ❤️ for Security Analysts</p>
+    </footer>
+
+  </div>
+</body>
+</html>
